@@ -2,6 +2,8 @@ import csv
 
 import psycopg2
 
+import re
+
 import psycopg2.extras
 
 conn = psycopg2 . connect ( host ="cc3201.dcc.uchile.cl",
@@ -11,7 +13,7 @@ conn = psycopg2 . connect ( host ="cc3201.dcc.uchile.cl",
 
 cur = conn.cursor()
 
-def findOrInser0(name):
+def findOrInsertCharacter(name):
     cur.execute("SELECT id FROM superheroes.galvarena_character WHERE name = %s LIMIT 1", [name])
     r = cur.fetchone()
     if(r):
@@ -20,7 +22,7 @@ def findOrInser0(name):
         cur.execute("INSERT INTO superheroes.galvarena_character (name) VALUES (%s) RETURNING id", [name])
         return cur.fetchone()[0]
 
-def findOrInser1(id, name, str, int, spd):
+def findOrInsertSuperHeroe(id, name, str, int, spd):
     cur.execute("SELECT id FROM superheroes.galvarena_superheroe WHERE id = %s LIMIT 1", [id])
     r = cur.fetchone()
     if(r):
@@ -28,6 +30,40 @@ def findOrInser1(id, name, str, int, spd):
     else:
         cur.execute("INSERT INTO superheroes.galvarena_superheroe (id, name, strength, intelligence, speed) VALUES (%s,%s,%s,%s,%s) RETURNING id", [id, name,str,int,spd])
         return cur.fetchone()[0]
+
+def findOrInsertAlterego(alterego, superheroe):
+    alteregos_list = re.split(r'[;,]\s*', alterego)
+    for alter in alteregos_list:
+        if alter == "No alter egos found.":
+            continue
+        cur.execute("SELECT id FROM superheroes.galvarena_alterego WHERE name = %s LIMIT 1", [alter])
+        r = cur.fetchone()
+        if r:
+            continue
+        else:
+            cur.execute("INSERT INTO superheroes.galvarena_alterego (name) VALUES (%s) RETURNING id", [alter])
+            a = cur.fetchone()[0]
+            cur.execute("SELECT id FROM superheroes.galvarena_superheroe WHERE name = %s LIMIT 1", [superheroe])
+            s = cur.fetchone()
+            cur.execute("INSERT INTO superheroes.galvarena_super_alterego (super_id,alterego_id) VALUES (%s,%s)", [s,a])
+
+def findOrInsertWorkOccupation(workOccupations,superheroe):
+    workOccupations_list = re.split(r'[;,]\s*', workOccupations)
+    workOccupations_list = [occupation.lower() for occupation in workOccupations_list]
+    for occupation in workOccupations_list:
+        if occupation == "-":
+            continue
+        cur.execute("SELECT id FROM superheroes.galvarena_workocupation WHERE name = %s LIMIT 1", [occupation])
+        r = cur.fetchone()
+        if r:
+            continue
+        else:
+            cur.execute("INSERT INTO superheroes.galvarena_workocupation (name) VALUES (%s) RETURNING id", [occupation])
+            w = cur.fetchone()[0]
+            cur.execute("SELECT id FROM superheroes.galvarena_superheroe WHERE name = %s LIMIT 1", [superheroe])
+            s = cur.fetchone()
+            cur.execute("INSERT INTO superheroes.galvarena_super_work (super_id,work_id) VALUES (%s,%s)", [s, w])
+
 
 with open('Laboratorio_05_data.csv', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -57,7 +93,7 @@ with open('Laboratorio_05_data.csv', encoding='utf-8') as csvfile:
         weight_002 = row[20]
         eye_color = row[21]
         hair_color = row[22]
-        occupation = row[23]
+        work_occupation = row[23]
         base = row[24]
         group_affiliation = row[25]
         relatives = row[26]
@@ -77,9 +113,13 @@ with open('Laboratorio_05_data.csv', encoding='utf-8') as csvfile:
         else:
             speed = None
 
-        character_id = findOrInser0(full_name)
+        #character_id = findOrInsertCharacter(full_name)
 
-        superheroe_id = findOrInser1(character_id,super_name,strength, intelligence, speed)
+        #superheroe_id = findOrInsertSuperHeroe(character_id,super_name,strength, intelligence, speed)
+
+        #findOrInsertAlterego(alter_egos,super_name)
+
+        #findOrInsertWorkOccupation(work_occupation,super_name)
 
         i+= 1
 
